@@ -1,1 +1,239 @@
-index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JNTUH CGPA Calculator</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.box {
+    width: 90%;
+    max-width: 450px;
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    background: #4CAF50;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.logout {
+    background: #e74c3c;
+}
+
+.subject {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.result {
+    margin-top: 15px;
+    background: #f2f2f2;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+.result table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.result th, .result td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div class="box" id="loginPage">
+    <h2>Student Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- SUBJECT COUNT PAGE -->
+<div class="box hidden" id="subjectCountPage">
+    <h2>Subject Details</h2>
+    <input type="number" id="subjectCount" placeholder="Number of Subjects">
+    <button onclick="generateSubjects()">Next</button>
+</div>
+
+<!-- CGPA PAGE -->
+<div class="box hidden" id="cgpaPage">
+    <h2>JNTUH CGPA Calculator</h2>
+
+    <div id="subjects"></div>
+
+    <button onclick="calculateCGPA()">Calculate CGPA</button>
+    <button class="logout" onclick="logout()">Logout</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<script>
+// LOGIN
+function login() {
+    const user = document.getElementById("username").value;
+    const pass = document.getElementById("password").value;
+    if (user && pass) {
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("subjectCountPage").classList.remove("hidden");
+    } else {
+        alert("Enter login details");
+    }
+}
+
+// GENERATE SUBJECT INPUTS
+function generateSubjects() {
+    const count = Number(document.getElementById("subjectCount").value);
+    const subjectsDiv = document.getElementById("subjects");
+    subjectsDiv.innerHTML = "";
+
+    if (count <= 0) {
+        alert("Enter valid number of subjects");
+        return;
+    }
+
+    for (let i = 1; i <= count; i++) {
+        subjectsDiv.innerHTML += `
+            <div class="subject">
+                <input type="number" placeholder="Credits" class="credit" min="0">
+                <input type="number" placeholder="Marks (0-100)" class="marks" min="0" max="100">
+            </div>
+        `;
+    }
+
+    document.getElementById("subjectCountPage").classList.add("hidden");
+    document.getElementById("cgpaPage").classList.remove("hidden");
+}
+
+// MARKS → JNTUH GRADE POINT
+function marksToGradeJNTUH(marks) {
+    if (marks >= 90) return {point: 10, grade:"O"};
+    if (marks >= 80) return {point: 9, grade:"A+"};
+    if (marks >= 70) return {point: 8, grade:"A"};
+    if (marks >= 60) return {point: 7, grade:"B+"};
+    if (marks >= 50) return {point: 6, grade:"B"};
+    if (marks >= 40) return {point: 5, grade:"C"};
+    return {point: 0, grade:"F"};
+}
+
+// CALCULATE CGPA + PASS/FAIL + SUBJECT GRADES
+function calculateCGPA() {
+    const credits = document.querySelectorAll(".credit");
+    const marks = document.querySelectorAll(".marks");
+
+    let totalCredits = 0;
+    let totalPoints = 0;
+    let passCount = 0;
+    let failCount = 0;
+
+    let tableRows = "";
+
+    for (let i = 0; i < credits.length; i++) {
+        const c = Number(credits[i].value);
+        const m = Number(marks[i].value);
+        const gradeObj = marksToGradeJNTUH(m);
+        const grade = gradeObj.grade;
+        const point = gradeObj.point;
+
+        if (grade === "F") failCount++;
+        else passCount++;
+
+        totalCredits += c;
+        totalPoints += c * point;
+
+        tableRows += `<tr>
+            <td>${i+1}</td>
+            <td>${c}</td>
+            <td>${m}</td>
+            <td>${grade}</td>
+            <td>${point}</td>
+        </tr>`;
+    }
+
+    if (totalCredits === 0) {
+        document.getElementById("result").innerHTML = "Please enter valid data!";
+        return;
+    }
+
+    const cgpa = totalPoints / totalCredits;
+    const percentage = cgpa * 10;
+
+    document.getElementById("result").innerHTML = `
+        CGPA: ${cgpa.toFixed(2)} <br>
+        Percentage: ${percentage.toFixed(2)}% <br><br>
+        Total Subjects: ${credits.length} <br>
+        Passed Subjects: ${passCount} <br>
+        Failed Subjects: ${failCount} <br><br>
+
+        <strong>Subject-wise Grades:</strong>
+        <table>
+            <tr>
+                <th>Sr.No</th>
+                <th>Credits</th>
+                <th>Marks</th>
+                <th>Grade</th>
+                <th>Grade Point</th>
+            </tr>
+            ${tableRows}
+        </table>
+    `;
+}
+
+// LOGOUT
+function logout() {
+    location.reload();
+}
+</script>
+
+</body>
+</html>
